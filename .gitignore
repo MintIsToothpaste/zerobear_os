@@ -1,0 +1,8 @@
+# Local installer state and Python caches are not shared.
+/.zerobear-os/
+__pycache__/
+*.pyc
+# Each PC creates its own runtime skill links during installation.
+/.claude/skills/
+/.codex/skills/
+/.agents/skills/
