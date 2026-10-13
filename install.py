@@ -13,6 +13,7 @@ from scripts.install_support import (
     NAME, create_link, digest, directory_snapshot, installation_lock, linked, load_state, owned,
     present, remove_item, safe_path, save_state, state_directory,
 )
+from scripts.session_hook_install import install_hooks
 
 
 def apply_plans(home, root, plans, instruction_bytes, dry_run):
@@ -104,6 +105,7 @@ def main() -> int:
     outcomes = []
     if args.scope in ("all", "user"):
         outcomes.append(apply_plans(home, root, plans, instruction_bytes, args.dry_run))
+        install_hooks(home, root, args.runtime, args.dry_run)
     if args.scope in ("all", "project") and (args.scope == "project" or root != home):
         local_plans = [(relative, item.copy()) for relative, item in plans if item["kind"] == "link"]
         outcomes.append(apply_plans(root, root, local_plans, instruction_bytes, args.dry_run))

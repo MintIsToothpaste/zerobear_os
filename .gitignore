@@ -6,3 +6,7 @@ __pycache__/
 /.claude/skills/
 /.codex/skills/
 /.agents/skills/
+# Test temporary directories
+/.installer-test-*/
+/.session-test-*/
+/.hook-test-*/

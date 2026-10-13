@@ -12,6 +12,7 @@ from scripts.install_support import (
     installation_lock, load_state, owned, present, remove_item,
     safe_path, save_state, state_directory,
 )
+from scripts.session_hook_install import uninstall_hooks
 
 
 def remove_scope(home, runtime_filter, dry_run):
@@ -54,6 +55,8 @@ def main() -> int:
     root = Path(__file__).resolve().parent
     outcomes = []
     if args.scope in ("all", "user"):
+        if (state_directory(home) / "install.json").exists():
+            uninstall_hooks(home, args.runtime, args.dry_run)
         outcomes.append(remove_scope(home, args.runtime, args.dry_run))
     if args.scope in ("all", "project") and (args.scope == "project" or root != home):
         outcomes.append(remove_scope(root, args.runtime, args.dry_run))

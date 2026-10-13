@@ -11,6 +11,7 @@
 - Focus on the requested scope. Suggest unrelated changes or refactoring separately.
 - First review and follow the project's existing instructions, structure, and code style.
 - Choose the simplest solution that meets the current requirements.
+- When the user wants to finish or record this chat, use the session-close skill if available. Judge intent from context, ask for an unconfigured recording folder, and report completion only after a verified save. Do not close the application or shell.
 
 ## File Changes
 - Preserve existing encoding and line endings.
