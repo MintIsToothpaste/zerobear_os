@@ -20,6 +20,24 @@ def apply_plans(home, root, plans, instruction_bytes, dry_run):
     with installation_lock(home, dry_run):
         state = load_state(home)
         state["source_root"] = str(root)
+        # Replace the retired skill only when its link belongs to this OS.
+        for relative, planned_item in plans:
+            if planned_item["kind"] != "link" or not relative.endswith("/jira"):
+                continue
+            retired = relative.rsplit("/", 1)[0] + "/bug-debug"
+            previous = state["items"].get(retired)
+            if not previous or previous.get("kind") != "link" or Path(previous["target"]).resolve() != (root / "skills/bug-debug").resolve():
+                continue
+            path = safe_path(home, retired)
+            if present(path) and not owned(path, previous):
+                print(f"MODIFIED (left unchanged): {path}")
+                continue
+            print(f"{'WOULD REMOVE retired skill' if dry_run else 'REMOVE retired skill'}: {path}")
+            if not dry_run:
+                if present(path):
+                    remove_item(home, retired, previous)
+                del state["items"][retired]
+                save_state(home, state)
         for relative, planned_item in plans:
             item = planned_item.copy()
             path = safe_path(home, relative)

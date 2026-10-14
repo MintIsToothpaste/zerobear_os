@@ -14,6 +14,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.install_support import create_link, linked, remove_item, remove_link, save_state
+from install import apply_plans
 
 
 class InstallerTests(unittest.TestCase):
@@ -103,12 +104,44 @@ class InstallerTests(unittest.TestCase):
         before = self.manifest()
         self.run_cli("uninstall.py", "--dry-run")
         self.assertEqual(self.manifest(), before)
-        self.assertTrue(linked(self.home / ".claude/skills/bug-debug"))
-        self.assertTrue((self.home / ".claude/skills/bug-debug/SKILL.md").is_file())
+        self.assertTrue(linked(self.home / ".claude/skills/jira"))
+        self.assertTrue((self.home / ".claude/skills/jira/SKILL.md").is_file())
         self.run_cli("uninstall.py", "--runtime", "codex")
         self.assertEqual(self.manifest(), before)
         self.run_cli("uninstall.py", "--runtime", "claude")
         self.assertEqual(self.manifest()["items"], {})
+
+    def test_jira_replaces_only_owned_retired_links_and_respects_preview(self):
+        root = Path(self.temporary.name) / "os"
+        legacy = root / "skills/bug-debug"
+        legacy.mkdir(parents=True)
+        (legacy / "SKILL.md").write_bytes(b"old skill")
+        relative = ".claude/skills/bug-debug"
+        target = self.home / relative
+        create_link(target, legacy)
+        save_state(self.home, {"version": 1, "items": {
+            relative: {"kind": "link", "target": str(legacy)}
+        }})
+        jira = root / "skills/jira"
+        legacy.rename(jira)
+        plans = [(".claude/skills/jira", {"kind": "link", "target": str(jira)})]
+        apply_plans(self.home, root, plans, b"", True)
+        self.assertTrue(linked(target))
+        self.assertIn(relative, self.manifest()["items"])
+        apply_plans(self.home, root, plans, b"", False)
+        self.assertFalse(linked(target))
+        self.assertNotIn(relative, self.manifest()["items"])
+        self.assertEqual((self.home / ".claude/skills/jira").resolve(), jira)
+        # A user-retargeted legacy link must survive installation.
+        foreign = self.home / "foreign"
+        foreign.mkdir()
+        create_link(target, foreign)
+        state = self.manifest()
+        state["items"][relative] = {"kind": "link", "target": str(legacy)}
+        save_state(self.home, state)
+        apply_plans(self.home, root, plans, b"", False)
+        self.assertEqual(target.resolve(), foreign)
+        self.assertIn(relative, self.manifest()["items"])
 
     def test_uninstall_refuses_linked_parent(self):
         self.run_cli("install.py", "--runtime", "claude")
